@@ -15,7 +15,7 @@ export async function GET(request) {
   if (!code) {
     const state = crypto.randomUUID();
     const clientId = process.env.Github_Client_Id || process.env.NEXT_PUBLIC_CLIENT_ID;
-    const redirectUri = encodeURIComponent(process.env.GITHUB_REDIRECT_URI || "http://localhost:3000/api/githubauth");
+    const redirectUri = encodeURIComponent("https://byte-snowy.vercel.app/api/githubauth" || "http://localhost:3000/api/githubauth");
     const scopes = encodeURIComponent("read:user user:email repo");
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes}&state=${state}`;
     return NextResponse.redirect(githubAuthUrl);
@@ -29,7 +29,7 @@ export async function GET(request) {
         client_id: process.env.Github_Client_Id || process.env.NEXT_PUBLIC_CLIENT_ID,
         client_secret: process.env.Github_Client_Secret || process.env.CLIENT_SECRET,
         code,
-        redirect_uri: process.env.GITHUB_REDIRECT_URI || "http://localhost:3000/api/githubauth",
+        redirect_uri: "https://byte-snowy.vercel.app/api/githubauth" || "http://localhost:3000/api/githubauth",
       },
       { headers: { Accept: "application/json" } }
     );
@@ -106,7 +106,7 @@ export async function GET(request) {
     await user.save();
 
    
-    const response = NextResponse.redirect("http://localhost:3000/Dashboard");
+    const response = NextResponse.redirect("https://byte-snowy.vercel.app/Dashboard");
     response.cookies.set("github_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

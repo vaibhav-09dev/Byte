@@ -31,7 +31,7 @@ export async function PUT(req) {
         return NextResponse.json({ success: false, error: "User or repo not found" }, { status: 404 });
       }
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushReadme`, {
+      const res = await fetch(`${"https://byte-snowy.vercel.app" || "http://localhost:3000"}/api/pushReadme`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: user.accessToken, repoFullName: repo.fullName, content })
@@ -56,7 +56,7 @@ export async function PUT(req) {
           const defaultContent = `# ${repo.name}\n\n${repo.description || ""}\n\n[View Repo](${repo.htmlUrl})`;
           const pushContent = content && repo.fullName === repoFullName ? content : defaultContent;
 
-          const pushRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushReadme`, {
+          const pushRes = await fetch(`${"https://byte-snowy.vercel.app" || "http://localhost:3000"}/api/pushReadme`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: user.accessToken, repoFullName: repo.fullName, content: pushContent })
