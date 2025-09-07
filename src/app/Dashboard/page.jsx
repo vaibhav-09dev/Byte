@@ -19,9 +19,9 @@ const Page = () => {
   const [loadingBulkPush, setLoadingBulkPush] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [visibility, setVisibility] = useState("all"); // all | public | private
-  const [sortBy, setSortBy] = useState("name-asc"); // name-asc | name-desc
-  const flipWords = ["Developer", "Creator", "Builder", "Hacker"];
+  const [visibility, setVisibility] = useState("all"); 
+  const [sortBy, setSortBy] = useState("name-asc"); 
+  const flipWords = [ "Innovate", "Inspire", "Code"];
   const [wordIndex, setWordIndex] = useState(0);
 
   useEffect(() => {
@@ -87,18 +87,7 @@ const Page = () => {
     setLoadingBulkGenerate(false);
   };
 
-  const pushAllReadmes = async () => {
-    if (!user?._id) return setError("Missing user");
-    setLoadingBulkPush(true);
-    setError("");
-    try {
-      const res = await axios.put("/api/pushReadme", { userId: user._id, bulk: true });
-      if (!res.data.success) throw new Error(res.data.error || "Failed to push");
-    } catch (e) {
-      setError(e.message);
-    }
-    setLoadingBulkPush(false);
-  };
+  
 
   if (error)
     return (
@@ -115,19 +104,19 @@ const Page = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-6 overflow-hidden">
-      {/* Animated Background Blobs */}
+     
       <div className="absolute top-[-10%] left-[-20%] w-[600px] h-[600px] bg-blue-500/20 rounded-full filter blur-3xl animate-blob"></div>
       <div className="absolute top-[60%] right-[-15%] w-[500px] h-[500px] bg-purple-500/20 rounded-full filter blur-3xl animate-blob animation-delay-2000"></div>
       <div className="absolute bottom-[10%] left-[30%] w-[400px] h-[400px] bg-pink-500/10 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
 
-      {/* 👋 Top-left Hello */}
+     
       <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
         {(user.avatarUrl || user.avatar) && (
-          <img src={user.avatarUrl || user.avatar} alt="avatar" className="w-15 h-15 rounded-full border border-gray-700" />
+          <img src={user.avatarUrl || user.avatar} alt="avatar" className="w-20 h-20 rounded-full border border-gray-700" />
         )}
         <div>
           <h2 className="text-3xl font-bold text-white">👋 Hello, {displayName}</h2>
-          <div className="h-6 overflow-hidden text-blue-300 font-semibold">
+          <div className="h-6 overflow-hidden text-blue-300 ml-8 font-bold text-lg">
             <AnimatePresence mode="wait">
               <motion.span
                 key={wordIndex}
@@ -142,11 +131,7 @@ const Page = () => {
             </AnimatePresence>
           </div>
           <br />
-          {Array.isArray(repos) && (
-            <p className="text-sm font-bold text-gray-200">
-              Total Repositories: <span className="text-blue-600">{repos.length}</span> · Public: <span className="text-green-600">{repos.filter(r => !r.private).length}</span> · Private: <span className="text-yellow-500">{repos.filter(r => r.private).length}</span>
-            </p>
-          )}
+          
          
         </div>
       </div>
@@ -157,12 +142,12 @@ const Page = () => {
         transition={{ duration: 0.5 }}
         className="relative z-10 max-w-8xl mx-auto"
       >
-        {/* 🚀 Center Heading */}
+     
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col mt-16 items-center text-center mb-8"
+          className="flex flex-col md:mt-16 mt-32 items-center text-center mb-8"
         >
           <h1 className="text-3xl font-extrabold text-white">
             🚀 Welcome to Your Dashboard
@@ -186,9 +171,23 @@ const Page = () => {
               )}
             </Button>
             
-          </div>
+          </div> <br />
+          {Array.isArray(repos) && (
+           <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm sm:text-base md:text-lg font-bold text-gray-200 text-center">
+  <span>
+    Total Repositories: <span className="text-blue-600">{repos.length}</span>
+  </span>
+  <span>
+    Public: <span className="text-green-600">{repos.filter(r => !r.private).length}</span>
+  </span>
+  <span>
+    Private: <span className="text-yellow-500">{repos.filter(r => r.private).length}</span>
+  </span>
+</p>
+
+          )}
         </motion.div>
-        <Card className="bg-gray-900/50 backdrop-blur-lg border border-gray-700 rounded-3xl mb-10 p-6">
+        <Card className="bg-gray-900/50 backdrop-blur-lg border border-gray-700 rounded-3xl mb-10 md:p-6">
           <CardContent>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
             <h3 className="text-xl font-semibold text-white">📂 Your Repositories</h3>
@@ -230,7 +229,7 @@ const Page = () => {
             const an = (a.name || "").toLowerCase();
             const bn = (b.name || "").toLowerCase();
             if (sortBy === "name-desc") return bn.localeCompare(an);
-            return an.localeCompare(bn); // name-asc default
+            return an.localeCompare(bn); 
           });
           return (
           <div className="grid md:grid-cols-2 gap-6">
@@ -241,7 +240,7 @@ const Page = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
             >
-              {/* Frosted Glass Card */}
+          
               <Card className="bg-gray-900/60 backdrop-blur-lg border border-gray-700 rounded-3xl hover:shadow-2xl transition-all duration-300">
                 <CardContent className="p-5">
                   <a
@@ -262,10 +261,17 @@ const Page = () => {
                         Updated: {new Date(repo.repoPushedAt || repo.repoUpdatedAt).toLocaleString()}
                       </span>
                     )}
+                    <span>
+                      {repo.language && (
+                        <span className="inline-block text-xs px-2 font-bold py-1 rounded-full bg-gray-800 border border-gray-700 text-gray-300">
+                         · {repo.language}
+                        </span>
+                      )}
+                    </span>
                   </div>
 
                   <div className="flex gap-2 mt-4 flex-wrap">
-                    {/* Generate README */}
+                    
                     <Button
                       size="sm"
                       className="bg-black text-white hover:bg-gray-900"
@@ -283,7 +289,7 @@ const Page = () => {
                       )}
                     </Button>
 
-                    {/* Copy README */}
+            
                     {readmeData[repo._id]?.content && (
                       <Button
                         size="sm"
@@ -304,7 +310,7 @@ const Page = () => {
                       </Button>
                     )}
 
-                    {/* Push directly */}
+                
                     {readmeData[repo._id]?.content && (
                       <Button
                         size="sm"
@@ -342,11 +348,11 @@ const Page = () => {
                       </Button>
                     )}
 
-                    {/* Edit & Push */}
+               
                     
                   </div>
 
-                  {/* Generated README Preview */}
+                   
                   {readmeData[repo._id]?.content && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}

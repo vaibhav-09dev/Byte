@@ -16,7 +16,7 @@ export async function GET(req) {
       return NextResponse.json({ success: false, error: "No token found" }, { status: 401 });
     }
 
-    // 🔹 GitHub user fetch
+
     const userRes = await fetch("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -27,7 +27,7 @@ export async function GET(req) {
       return NextResponse.json({ success: false, error: "Invalid GitHub token" }, { status: 401 });
     }
 
-    // 🔹 DB user find / create
+
     let user = await User.findOne({ githubId: userData.id });
     if (!user) {
       user = await User.create({
@@ -39,7 +39,7 @@ export async function GET(req) {
       });
     }
 
-    // 🔹 GitHub se repos fetch (private + public)
+
     const repoRes = await fetch(
       "https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&per_page=100",
       { headers: { Authorization: `Bearer ${token}` } }
@@ -50,7 +50,7 @@ export async function GET(req) {
       return NextResponse.json({ success: false, error: "Failed to fetch repos from GitHub" }, { status: 500 });
     }
 
-    // 🔹 DB me save/update (resolve language if missing)
+
     for (const repo of repos) {
       let primaryLanguage = repo.language || "";
       if (!primaryLanguage) {
@@ -66,7 +66,7 @@ export async function GET(req) {
               primaryLanguage = entries[0][0];
             }
           }
-        } catch {}
+        } catch { }
       }
 
       await Repository.updateOne(

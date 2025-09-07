@@ -4,7 +4,6 @@ import User from "@/app/Modal/User";
 import { Connect } from "@/app/db/db";
 import { geminiModel } from "@/lib/gemni";
 
-// using shared Gemini model from lib/gemni
 
 export async function POST(req) {
   await Connect();
@@ -12,7 +11,7 @@ export async function POST(req) {
     const { userId, repoId, bulk } = await req.json();
 
     if (bulk) {
-      // Generate readmes for all repos of the user
+      
       const user = await User.findById(userId);
       if (!user) {
         return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });

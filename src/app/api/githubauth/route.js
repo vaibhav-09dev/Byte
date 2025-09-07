@@ -11,7 +11,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // Step 1: Redirect to GitHub OAuth if no code
+
   if (!code) {
     const state = crypto.randomUUID();
     const clientId = process.env.Github_Client_Id || process.env.NEXT_PUBLIC_CLIENT_ID;
@@ -22,7 +22,7 @@ export async function GET(request) {
   }
 
   try {
-    // Step 2: Exchange code for access token
+    
     const tokenRes = await axios.post(
       "https://github.com/login/oauth/access_token",
       {
@@ -39,13 +39,13 @@ export async function GET(request) {
     }
     const accessToken = tokenRes.data.access_token;
 
-    // Step 3: Get GitHub user
+ 
     const userRes = await axios.get("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const githubUser = userRes.data;
 
-    // Step 4: Get emails
+ 
     const emailRes = await axios.get("https://api.github.com/user/emails", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -57,7 +57,7 @@ export async function GET(request) {
       ? emails.find(e => e.primary)?.verified || false
       : false;
 
-    // Step 5: Save or update user in DB
+
     let user = await User.findOne({ githubId: githubUser.id });
     if (!user) {
       user = await User.create({
@@ -77,13 +77,13 @@ export async function GET(request) {
       await user.save();
     }
 
-    // Step 6: Fetch all repos (public + private)
+   
     const reposRes = await axios.get("https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&per_page=100", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const repos = reposRes.data;
 
-    // Save repos to DB (upsert)
+    
     for (const repo of repos) {
       await Repository.updateOne(
         { repoId: String(repo.id), userId: user._id },
@@ -100,18 +100,18 @@ export async function GET(request) {
       );
     }
 
-    // Step 7: Create session token
+  
     const sessionToken = crypto.randomBytes(32).toString("hex");
     user.sessionToken = sessionToken;
     await user.save();
 
-    // Step 8: Redirect and set cookie
+   
     const response = NextResponse.redirect("http://localhost:3000/Dashboard");
     response.cookies.set("github_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: 60 * 60 * 24, 
     });
 
     return response;

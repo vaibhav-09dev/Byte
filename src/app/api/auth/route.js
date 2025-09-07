@@ -8,15 +8,15 @@ export async function POST(req) {
   await Connect();
 
   try {
-    const cookieStore =await cookies();
-const token =  cookieStore.get("github_token")?.value;
-console.log("Auth Route: Retrieved token from cookies:", token ? "present" : "missing");
+    const cookieStore = await cookies();
+    const token = cookieStore.get("github_token")?.value;
+    console.log("Auth Route: Retrieved token from cookies:", token ? "present" : "missing");
 
-if (!token) {
-  return NextResponse.json({ success: false, error: "Not authenticated" });
-}
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Not authenticated" });
+    }
 
-    
+
     const userRes = await fetch("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -37,14 +37,14 @@ if (!token) {
       });
     }
 
-  
+
     const repoRes = await fetch("https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&per_page=100", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const repos = await repoRes.json();
 
-   
-    // Enrich language if missing by calling languages API per repo
+
+    
     const savedRepos = await Promise.all(
       repos.map(async (r) => {
         let primaryLanguage = r.language || "";
@@ -61,7 +61,7 @@ if (!token) {
                 primaryLanguage = entries[0][0];
               }
             }
-          } catch {}
+          } catch { }
         }
 
         return Repository.findOneAndUpdate(

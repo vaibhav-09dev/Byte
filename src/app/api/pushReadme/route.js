@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import axios from "axios"; 
+import axios from "axios";
 import { Connect } from "@/app/db/db";
 import User from "@/app/Modal/User";
 import Repository from "@/app/Modal/Repository";
@@ -22,7 +22,7 @@ export async function PUT(req) {
       );
     }
 
-    // Single push path using userId+repoId (server-side token lookup)
+   
     if (!bulk && userId && repoId && content) {
       await Connect();
       const user = await User.findById(userId);
@@ -31,7 +31,6 @@ export async function PUT(req) {
         return NextResponse.json({ success: false, error: "User or repo not found" }, { status: 404 });
       }
 
-      // Recurse into self with a PUT to push using token + fullName
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/pushReadme`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -41,7 +40,7 @@ export async function PUT(req) {
       return NextResponse.json(data, { status: res.status });
     }
 
-    // Bulk path: generate and push for all repos of user
+    
     if (bulk) {
       await Connect();
       const user = await User.findById(userId);
@@ -53,7 +52,7 @@ export async function PUT(req) {
       const results = [];
       for (const repo of repos) {
         try {
-          // Step A: ensure we have content from readme endpoint (client may already have it, but generate simple default here if not)
+        
           const defaultContent = `# ${repo.name}\n\n${repo.description || ""}\n\n[View Repo](${repo.htmlUrl})`;
           const pushContent = content && repo.fullName === repoFullName ? content : defaultContent;
 
@@ -72,7 +71,7 @@ export async function PUT(req) {
       return NextResponse.json({ success: true, results });
     }
 
-    // Step 0: Resolve default branch from repo metadata and detect empty repos
+
     let branch = "main";
     let isEmptyRepo = false;
     try {
@@ -102,7 +101,7 @@ export async function PUT(req) {
           "User-Agent": "byte-readme-builder",
         };
 
-        // Create blob
+     
         const blobRes = await axios.post(
           `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
           { content, encoding: "utf-8" },
@@ -110,7 +109,7 @@ export async function PUT(req) {
         );
         const blobSha = blobRes.data.sha;
 
-        // Create tree with README.md
+      
         const treeRes = await axios.post(
           `https://api.github.com/repos/${owner}/${repo}/git/trees`,
           {
@@ -127,7 +126,7 @@ export async function PUT(req) {
         );
         const treeSha = treeRes.data.sha;
 
-        // Create initial commit (no parents)
+        
         const commitRes = await axios.post(
           `https://api.github.com/repos/${owner}/${repo}/git/commits`,
           {
@@ -139,7 +138,7 @@ export async function PUT(req) {
         );
         const commitSha = commitRes.data.sha;
 
-        // Create ref for default branch (use detected branch)
+       
         const targetBranch = branch || "main";
         try {
           await axios.post(
@@ -151,7 +150,7 @@ export async function PUT(req) {
             { headers }
           );
         } catch (refErr) {
-          // If ref exists, update it instead
+      
           if (refErr.response?.status === 422) {
             await axios.patch(
               `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`,
@@ -168,13 +167,13 @@ export async function PUT(req) {
       } catch (e) {
         console.error("pushReadme: failed to initialize empty repo", e.response?.data || e.message);
         return NextResponse.json(
-          { success: false, error: e.response?.data || e.message },
+          { success: false, error: "cannot push readme of private repos please revoke and reauthorize the app Or push readme of public repos" },
           { status: 500 }
         );
       }
     }
 
-    // Step 1: Fetch existing README
+
     let sha = null;
     const tryGetReadme = async (tryBranch) => {
       try {
@@ -195,7 +194,7 @@ export async function PUT(req) {
       }
     };
 
-    // Attempt default branch, then master as fallback for legacy repos
+   
     try {
       const info = await tryGetReadme(branch);
       sha = info.sha;
@@ -217,7 +216,7 @@ export async function PUT(req) {
       branch,
     };
     if (sha) {
-      payload.sha = sha; // attach actual sha if updating
+      payload.sha = sha; 
     }
 
     console.log("pushReadme: Sending PUT with payload:", {
@@ -227,7 +226,7 @@ export async function PUT(req) {
       contentLength: content.length,
     });
 
-    // Step 3: Push update
+   
     const putOnce = async (overrideBranch) => {
       const body = { ...payload };
       if (overrideBranch) body.branch = overrideBranch;
@@ -264,7 +263,7 @@ export async function PUT(req) {
   } catch (err) {
     console.error("Error in pushReadme:", err.response?.data || err.message);
     return NextResponse.json(
-      { success: false, error: err.response?.data || err.message },
+      { success: false, error: "cannot push readme of private repos please revoke and reauthorize the app Or push readme of public repos"},
       { status: 500 }
     );
   }

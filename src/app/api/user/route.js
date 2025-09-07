@@ -12,13 +12,13 @@ export async function POST(req) {
   try {
     await Connect();
 
-    // GitHub API se user ka data lo
+    
     const userRes = await fetch("https://api.github.com/user", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const user = await userRes.json();
 
-    // Agar email chahiye to ek aur API call
+  
    const emailRes = await fetch("https://api.github.com/user/emails", {
   headers: { Authorization: `Bearer ${accessToken}` },
 });
@@ -31,8 +31,8 @@ let dbUser = await User.findOne({ githubId: user.id });
 if (!dbUser) {
   dbUser = await User.create({
     githubId: user.id,
-    username: user.name || user.login,          // fallback to login
-    email: user.email || "", // fallback if available
+    username: user.name || user.login,         
+    email: user.email || "", 
     avatar: user.avatar_url,
     accessToken,
   });
