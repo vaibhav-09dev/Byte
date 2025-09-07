@@ -50,8 +50,25 @@ export async function GET(req) {
       return NextResponse.json({ success: false, error: "Failed to fetch repos from GitHub" }, { status: 500 });
     }
 
-    // 🔹 DB me save/update
+    // 🔹 DB me save/update (resolve language if missing)
     for (const repo of repos) {
+      let primaryLanguage = repo.language || "";
+      if (!primaryLanguage) {
+        try {
+          const langsRes = await fetch(`https://api.github.com/repos/${repo.full_name}/languages`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const langs = await langsRes.json();
+          if (langs && typeof langs === "object") {
+            const entries = Object.entries(langs);
+            if (entries.length > 0) {
+              entries.sort((a, b) => b[1] - a[1]);
+              primaryLanguage = entries[0][0];
+            }
+          }
+        } catch {}
+      }
+
       await Repository.updateOne(
         { repoId: repo.id.toString(), userId: user._id },
         {
@@ -61,13 +78,18 @@ export async function GET(req) {
             private: repo.private,
             htmlUrl: repo.html_url,
             description: repo.description,
+            language: primaryLanguage,
+            repoUpdatedAt: repo.updated_at ? new Date(repo.updated_at) : undefined,
+            repoPushedAt: repo.pushed_at ? new Date(repo.pushed_at) : undefined,
           },
         },
         { upsert: true }
       );
     }
 
-    return NextResponse.json({ success: true, repos, count: repos.length, scopes }, { status: 200 });
+    const publicCount = repos.filter(r => !r.private).length;
+    const privateCount = repos.filter(r => r.private).length;
+    return NextResponse.json({ success: true, repos, count: repos.length, publicCount, privateCount, scopes }, { status: 200 });
   } catch (error) {
     console.error("Repo Fetch Error:", error);
     return NextResponse.json({ success: false, error: "Failed to fetch repos" }, { status: 500 });

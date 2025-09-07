@@ -94,10 +94,84 @@ export async function PUT(req) {
     }
 
     if (isEmptyRepo) {
-      return NextResponse.json(
-        { success: false, error: "Repository is empty. Make an initial commit (README/license or any file) before pushing via API." },
-        { status: 409 }
-      );
+      try {
+        const [owner, repo] = repoFullName.split("/");
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "byte-readme-builder",
+        };
+
+        // Create blob
+        const blobRes = await axios.post(
+          `https://api.github.com/repos/${owner}/${repo}/git/blobs`,
+          { content, encoding: "utf-8" },
+          { headers }
+        );
+        const blobSha = blobRes.data.sha;
+
+        // Create tree with README.md
+        const treeRes = await axios.post(
+          `https://api.github.com/repos/${owner}/${repo}/git/trees`,
+          {
+            tree: [
+              {
+                path: "README.md",
+                mode: "100644",
+                type: "blob",
+                sha: blobSha,
+              },
+            ],
+          },
+          { headers }
+        );
+        const treeSha = treeRes.data.sha;
+
+        // Create initial commit (no parents)
+        const commitRes = await axios.post(
+          `https://api.github.com/repos/${owner}/${repo}/git/commits`,
+          {
+            message: "chore: initial README.md via dashboard",
+            tree: treeSha,
+            parents: [],
+          },
+          { headers }
+        );
+        const commitSha = commitRes.data.sha;
+
+        // Create ref for default branch (use detected branch)
+        const targetBranch = branch || "main";
+        try {
+          await axios.post(
+            `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+            {
+              ref: `refs/heads/${targetBranch}`,
+              sha: commitSha,
+            },
+            { headers }
+          );
+        } catch (refErr) {
+          // If ref exists, update it instead
+          if (refErr.response?.status === 422) {
+            await axios.patch(
+              `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${targetBranch}`,
+              { sha: commitSha, force: true },
+              { headers }
+            );
+          } else {
+            throw refErr;
+          }
+        }
+
+        console.log("pushReadme: initialized empty repository with README on", targetBranch);
+        return NextResponse.json({ success: true, initialized: true });
+      } catch (e) {
+        console.error("pushReadme: failed to initialize empty repo", e.response?.data || e.message);
+        return NextResponse.json(
+          { success: false, error: e.response?.data || e.message },
+          { status: 500 }
+        );
+      }
     }
 
     // Step 1: Fetch existing README

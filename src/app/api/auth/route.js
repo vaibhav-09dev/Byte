@@ -44,9 +44,27 @@ if (!token) {
     const repos = await repoRes.json();
 
    
+    // Enrich language if missing by calling languages API per repo
     const savedRepos = await Promise.all(
-      repos.map((r) =>
-        Repository.findOneAndUpdate(
+      repos.map(async (r) => {
+        let primaryLanguage = r.language || "";
+        if (!primaryLanguage) {
+          try {
+            const langsRes = await fetch(`https://api.github.com/repos/${r.full_name}/languages`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const langs = await langsRes.json();
+            if (langs && typeof langs === "object") {
+              const entries = Object.entries(langs);
+              if (entries.length > 0) {
+                entries.sort((a, b) => b[1] - a[1]);
+                primaryLanguage = entries[0][0];
+              }
+            }
+          } catch {}
+        }
+
+        return Repository.findOneAndUpdate(
           { repoId: r.id, userId: user._id },
           {
             name: r.name,
@@ -54,10 +72,13 @@ if (!token) {
             private: r.private,
             description: r.description,
             htmlUrl: r.html_url,
+            language: primaryLanguage,
+            repoUpdatedAt: r.updated_at ? new Date(r.updated_at) : undefined,
+            repoPushedAt: r.pushed_at ? new Date(r.pushed_at) : undefined,
           },
           { upsert: true, new: true }
-        )
-      )
+        );
+      })
     );
 
     return NextResponse.json({ success: true, user, repos: savedRepos, scopes });

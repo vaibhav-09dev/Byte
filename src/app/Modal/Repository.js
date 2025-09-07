@@ -8,6 +8,9 @@ const repoSchema = new mongoose.Schema({
   private: Boolean,
   htmlUrl: String,
   description: String,
+  language: String,
+  repoUpdatedAt: Date,
+  repoPushedAt: Date,
 }, { timestamps: true });
 
 export default mongoose.models.Repository || mongoose.model("Repository", repoSchema);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Github, FileText } from "lucide-react";
@@ -13,10 +13,25 @@ const Page = () => {
   const [readmeData, setReadmeData] = useState({});
   const [editingRepoId, setEditingRepoId] = useState(null);
   const [editorValue, setEditorValue] = useState("");
+  const [pushingRepoId, setPushingRepoId] = useState(null);
   const [loadingRepoId, setLoadingRepoId] = useState(null);
   const [loadingBulkGenerate, setLoadingBulkGenerate] = useState(false);
   const [loadingBulkPush, setLoadingBulkPush] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [visibility, setVisibility] = useState("all"); // all | public | private
+  const [sortBy, setSortBy] = useState("name-asc"); // name-asc | name-desc
+  const flipWords = ["Developer", "Creator", "Builder", "Hacker"];
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setWordIndex((i) => (i + 1) % flipWords.length);
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
+
+  const displayName = (user?.username || user?.login || user?.name || (user?.email ? user.email.split("@")[0] : "User"));
 
   useEffect(() => {
     axios
@@ -106,10 +121,34 @@ const Page = () => {
       <div className="absolute bottom-[10%] left-[30%] w-[400px] h-[400px] bg-pink-500/10 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
 
       {/* 👋 Top-left Hello */}
-      <div className="absolute top-6 left-6 z-20">
-        <h2 className="text-2xl font-bold text-white">
-          👋 Hello, {user.username}
-        </h2>
+      <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
+        {(user.avatarUrl || user.avatar) && (
+          <img src={user.avatarUrl || user.avatar} alt="avatar" className="w-15 h-15 rounded-full border border-gray-700" />
+        )}
+        <div>
+          <h2 className="text-3xl font-bold text-white">👋 Hello, {displayName}</h2>
+          <div className="h-6 overflow-hidden text-blue-300 font-semibold">
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={wordIndex}
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "-100%", opacity: 0 }}
+                transition={{ duration: 0.35 }}
+                className="inline-block"
+              >
+                {flipWords[wordIndex]}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+          <br />
+          {Array.isArray(repos) && (
+            <p className="text-sm font-bold text-gray-200">
+              Total Repositories: <span className="text-blue-600">{repos.length}</span> · Public: <span className="text-green-600">{repos.filter(r => !r.private).length}</span> · Private: <span className="text-yellow-500">{repos.filter(r => r.private).length}</span>
+            </p>
+          )}
+         
+        </div>
       </div>
 
       <motion.div
@@ -131,6 +170,7 @@ const Page = () => {
           <p className="text-gray-300">
             Manage your repositories and generate READMEs easily
           </p>
+          
           <div className="mt-4 flex gap-3">
             <Button
               className="bg-blue-700 hover:bg-blue-600 text-white"
@@ -150,14 +190,51 @@ const Page = () => {
         </motion.div>
         <Card className="bg-gray-900/50 backdrop-blur-lg border border-gray-700 rounded-3xl mb-10 p-6">
           <CardContent>
-           
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+            <h3 className="text-xl font-semibold text-white">📂 Your Repositories</h3>
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search repositories..."
+                className="w-full md:w-64 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500"
+              />
+              <select
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"
+              >
+                <option value="all">All</option>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200"
+              >
+                <option value="name-asc">Name (A–Z)</option>
+                <option value="name-desc">Name (Z–A)</option>
+              </select>
+            </div>
+          </div>
 
-        <h3 className="text-xl font-semibold text-white mb-4">
-          📂 Your Repositories
-        </h3>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {repos.map((repo, i) => (
+        {(() => {
+          const term = search.trim().toLowerCase();
+          let list = repos.filter((r) => {
+            const matchesSearch = !term || (r.fullName?.toLowerCase().includes(term) || r.name?.toLowerCase().includes(term) || r.description?.toLowerCase().includes(term));
+            const matchesVis = visibility === "all" || (visibility === "public" ? !r.private : r.private);
+            return matchesSearch && matchesVis;
+          });
+          list.sort((a,b) => {
+            const an = (a.name || "").toLowerCase();
+            const bn = (b.name || "").toLowerCase();
+            if (sortBy === "name-desc") return bn.localeCompare(an);
+            return an.localeCompare(bn); // name-asc default
+          });
+          return (
+          <div className="grid md:grid-cols-2 gap-6">
+          {list.map((repo, i) => (
             <motion.div
               key={repo._id}
               initial={{ opacity: 0, y: 20 }}
@@ -175,9 +252,17 @@ const Page = () => {
                     <Github size={18} />{" "}
                     {repo.fullName?.split("/")[1] || repo.name || "Unknown"}
                   </a>
-                  <p className="text-gray-300 text-sm mt-1">
-                    {repo.description}
-                  </p>
+                  <p className="text-gray-300 text-sm mt-1">{repo.description}</p>
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                    <span className={`inline-block text-xs px-2 py-1 rounded-full border ${repo.private ? 'bg-yellow-900/40 border-yellow-800 text-yellow-300' : 'bg-green-900/30 border-green-800 text-green-300'}`}>
+                      {repo.private ? 'Private' : 'Public'}
+                    </span>
+                    {(repo.repoUpdatedAt || repo.repoPushedAt) && (
+                      <span className="text-xs text-gray-400">
+                        Updated: {new Date(repo.repoPushedAt || repo.repoUpdatedAt).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex gap-2 mt-4 flex-wrap">
                     {/* Generate README */}
@@ -219,6 +304,44 @@ const Page = () => {
                       </Button>
                     )}
 
+                    {/* Push directly */}
+                    {readmeData[repo._id]?.content && (
+                      <Button
+                        size="sm"
+                        className="bg-green-700 hover:bg-green-600 text-white border border-gray-600"
+                        disabled={pushingRepoId === repo._id}
+                        onClick={async () => {
+                          try {
+                            setPushingRepoId(repo._id);
+                            const res = await axios.put("/api/pushReadme", {
+                              userId: user._id,
+                              repoId: repo._id,
+                              content: readmeData[repo._id].content,
+                            });
+                            if (!res.data.success) throw new Error(res.data.error || "Failed to push");
+                            const toast = document.createElement("div");
+                            toast.textContent = "✅ Pushed README to GitHub";
+                            toast.className =
+                              "fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50 animate-fade-in-out";
+                            document.body.appendChild(toast);
+                            setTimeout(() => toast.remove(), 2000);
+                          } catch (e) {
+                            setError(e.message);
+                          } finally {
+                            setPushingRepoId(null);
+                          }
+                        }}
+                      >
+                        {pushingRepoId === repo._id ? (
+                          <>
+                            <Loader2 className="animate-spin w-4 h-4 mr-1" /> Pushing
+                          </>
+                        ) : (
+                          <>Push</>
+                        )}
+                      </Button>
+                    )}
+
                     {/* Edit & Push */}
                     
                   </div>
@@ -244,6 +367,8 @@ const Page = () => {
             </motion.div>
           ))}
         </div>
+          );
+        })()}
           </CardContent>
         </Card>
       </motion.div>

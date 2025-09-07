@@ -1,7 +1,9 @@
 "use client";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 const Page = () => {
+  const [showWhy, setShowWhy] = useState(false);
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black p-6">
       
@@ -66,6 +68,26 @@ const Page = () => {
           />
           Continue with GitHub
         </motion.button>
+
+        {/* Why connect? toggle */}
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setShowWhy((v) => !v)}
+          className="mt-4 text-sm text-blue-300 hover:text-blue-200"
+        >
+          {showWhy ? "Hide details" : "Why connect GitHub?"}
+        </motion.button>
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: showWhy ? "auto" : 0, opacity: showWhy ? 1 : 0 }}
+          transition={{ duration: 0.3 }}
+          className="overflow-hidden mt-2 text-left text-gray-300 text-sm bg-gray-800/60 border border-gray-700 rounded-lg p-3"
+        >
+          - We only request minimal scopes to read your repos and write README when you ask.<br />
+          - Private repos require the repo scope; you can revoke access anytime in GitHub settings.<br />
+          - Tokens are stored securely server-side and used only for your actions.
+        </motion.div>
 
         {/* Footer */}
         <motion.div
