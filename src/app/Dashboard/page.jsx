@@ -343,7 +343,13 @@ const Page = () => {
                             <Loader2 className="animate-spin w-4 h-4 mr-1" /> Pushing
                           </>
                         ) : (
-                          <>Push</>
+                          <>
+                          {repo.private ? (
+                            <></>
+                          ) : (
+                            <>Push to GitHub</>
+                          )}
+                          </>
                         )}
                       </Button>
                     )}
